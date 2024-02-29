@@ -17,48 +17,86 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, PlusIcon, Undo } from "lucide-react";
+import { Check, PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type Task = {
   name: string;
-  due: number;
+  due: Date;
   complete: boolean;
 };
 
 const sample_tasks = [
   {
-    name: "tuda suda",
-    due: Date.now(),
+    name: "tuda suda asoetuhoasnteuhsantoehusn hasonteuhs naohesu tnh",
+    due: new Date(),
     complete: false,
   },
   {
     name: "million",
-    due: Date.now(),
+    due: new Date(),
     complete: false,
   },
   {
     name: "1",
-    due: Date.now(),
+    due: new Date(),
     complete: false,
   },
   {
     name: "maoseuht",
-    due: Date.now(),
+    due: new Date(),
     complete: false,
   },
 ];
+
+function formatDate(date: Date) {
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // JavaScript months are 0-based.
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+
+  return `${day}.${month} ${hours}:${minutes}`;
+}
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>(sample_tasks);
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
 
+  const TaskComponent = ({
+    task,
+    complete,
+  }: {
+    task: Task;
+    complete: boolean;
+  }) => (
+    <div className="border p-4 rounded-md flex items-center justify-between">
+      <div className="flex flex-col max-w-48">
+        <span className="font-bold truncate">{task.name}</span>
+        <span className="font-light text-xs">Due: {formatDate(task.due)}</span>
+      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => (complete ? handleComplete(task) : undoTask(task))}
+      >
+        <Check className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+
   const handleComplete = (taskToRemove: Task) => {
+    toast(`Congrats! You've completed the task`, {
+      description: `${taskToRemove.name}`,
+    });
     setCompletedTasks((completedTasks) => [taskToRemove, ...completedTasks]);
     setTasks(tasks.filter((task) => task !== taskToRemove));
   };
 
   const undoTask = (taskToReturn: Task) => {
+    toast("Task returned to active", {
+      description: `${taskToReturn.name}`,
+    });
     setTasks((tasks) => [taskToReturn, ...tasks]);
     setCompletedTasks(completedTasks.filter((task) => task !== taskToReturn));
   };
@@ -82,19 +120,11 @@ export default function Home() {
               <section className="flex-1 flex flex-col gap-2">
                 {tasks.map((task, index) => {
                   return (
-                    <div
+                    <TaskComponent
+                      complete={true}
+                      task={task}
                       key={`${task.name}${index}`}
-                      className="border p-4 rounded-md flex items-center justify-between"
-                    >
-                      <span className="font-bold">{task.name}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleComplete(task)}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    />
                   );
                 })}
               </section>
@@ -107,19 +137,11 @@ export default function Home() {
                     <section className=" flex flex-col gap-2">
                       {completedTasks.map((task, index) => {
                         return (
-                          <div
+                          <TaskComponent
+                            complete={false}
+                            task={task}
                             key={`${task.name}${index}`}
-                            className="border p-4 rounded-md flex items-center justify-between bg-secondary"
-                          >
-                            <span className="font-bold">{task.name}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => undoTask(task)}
-                            >
-                              <Undo className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          />
                         );
                       })}
                     </section>
