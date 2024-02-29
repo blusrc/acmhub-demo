@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -16,10 +17,37 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, PlusIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { CalendarIcon, Check, PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 type Task = {
   name: string;
@@ -27,28 +55,10 @@ type Task = {
   complete: boolean;
 };
 
-const sample_tasks = [
-  {
-    name: "tuda suda asoetuhoasnteuhsantoehusn hasonteuhs naohesu tnh",
-    due: new Date(),
-    complete: false,
-  },
-  {
-    name: "million",
-    due: new Date(),
-    complete: false,
-  },
-  {
-    name: "1",
-    due: new Date(),
-    complete: false,
-  },
-  {
-    name: "maoseuht",
-    due: new Date(),
-    complete: false,
-  },
-];
+const formSchema = z.object({
+  name: z.string().min(2).max(50),
+  due: z.date(),
+});
 
 function formatDate(date: Date) {
   const day = date.getDate().toString().padStart(2, "0");
@@ -60,8 +70,28 @@ function formatDate(date: Date) {
 }
 
 export default function Home() {
-  const [tasks, setTasks] = useState<Task[]>(sample_tasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+
+  // 1. Define your form.
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      due: new Date(),
+    },
+  });
+
+  // 2. Define a submit handler.
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    const task: Task = {
+      name: values.name,
+      due: values.due,
+      complete: false,
+    };
+    console.log(values);
+    undoTask(task);
+  }
 
   const TaskComponent = ({
     task,
@@ -85,6 +115,85 @@ export default function Home() {
     </div>
   );
 
+  const AddTaskDialog = () => (
+    <Dialog>
+      <DialogTrigger>
+        <Button>
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Add task
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Task</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Task</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Cook dinner" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="due"
+              render={({ field }) => (
+                <FormItem className="flex gap-2 flex-col">
+                  <FormLabel>Due</FormLabel>
+                  <FormControl>
+                    <Popover modal={true}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit">Submit</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+
   const handleComplete = (taskToRemove: Task) => {
     toast(`Congrats! You've completed the task`, {
       description: `${taskToRemove.name}`,
@@ -94,7 +203,7 @@ export default function Home() {
   };
 
   const undoTask = (taskToReturn: Task) => {
-    toast("Task returned to active", {
+    toast.success("Task added!", {
       description: `${taskToReturn.name}`,
     });
     setTasks((tasks) => [taskToReturn, ...tasks]);
@@ -151,10 +260,7 @@ export default function Home() {
             </Accordion>
           </CardContent>
           <CardFooter>
-            <Button>
-              <PlusIcon className="w-4 h-4 mr-2" />
-              Add task
-            </Button>
+            <AddTaskDialog />
           </CardFooter>
         </Card>
       </div>
