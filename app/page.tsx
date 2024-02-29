@@ -10,7 +10,7 @@ export default function Home() {
       <div className="max-w-md w-full flex-1 border-border border-x px-4 py-8 flex flex-col gap-4">
         <div className="flex w-full justify-between">
           <Avatar>
-            <AvatarImage src="https://github.com/blusrc" />
+            <AvatarImage src="https://github.com/blusrc.png" />
             <AvatarFallback>AA</AvatarFallback>
           </Avatar>
           <ModeToggle />
